@@ -1,0 +1,43 @@
+# Agent Memory MCP Server Configuration
+# All values shown are defaults. Uncomment to customize.
+
+# storage:
+#   db_path: ~/.agent-memory/memory.db
+
+# embedding:
+#   provider: openai          # openai | ollama | none
+#   base_url: https://api.openai.com/v1
+#   api_key: ${OPENAI_API_KEY}
+#   model: text-embedding-3-small
+#   dimensions: 1536
+
+# consolidation:
+#   provider: openai          # openai | ollama | none
+#   base_url: https://api.openai.com/v1
+#   api_key: ${OPENAI_API_KEY}
+#   model: gpt-4o-mini
+#   auto_interval_minutes: 0  # 0 = disabled
+#   min_memories: 3
+
+# server:
+#   transport: stdio           # stdio | http
+#   http_host: 127.0.0.1
+#   http_port: 8888
+#   auth_token: ${AGENT_MEMORY_AUTH_TOKEN}
+#   cors_origins:
+#     - "http://localhost:*"
+
+# ingestion:
+#   allowed_paths: []          # empty = ingest_file disabled
+#   max_file_size_mb: 1
+#   supported_extensions:
+#     - .txt
+#     - .md
+#     - .json
+#     - .csv
+#     - .yaml
+#     - .yml
+#     - .xml
+#     - .log
+
+# log_level: INFO
