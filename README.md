@@ -1,84 +1,28 @@
 # Agent Memory
 
-Persistent memory for AI agents. Store, search, and consolidate knowledge across sessions.
+Persistent memory system for AI agents. Store, search, and consolidate knowledge across sessions via an MCP server.
 
-Works with any MCP-compatible client: **Claude Code**, **Cursor**, **Windsurf**, **Cline**, or custom agents.
+Works with any MCP-compatible client: Claude Code, Cursor, Windsurf, Cline, or custom agents.
 
 ```
 pip install agent-memory-server
 ```
 
-## Quick Start (Claude Code)
+## Quick Start
 
-**1. Add the MCP server** (zero-config, works immediately):
+### For Claude Code Users
 
 ```bash
+# 1. Add the MCP server
 claude mcp add --transport stdio agent-memory -- uvx agent-memory-server
-```
 
-**2. Install the agent skill** (teaches Claude _when_ and _how_ to use memory):
-
-```bash
+# 2. Install the agent skill (teaches Claude when to use memory)
 npx skills add khanglvm/agent-memory -g
 ```
 
-Done. Claude Code now has persistent memory. It will automatically store facts, search past knowledge, and consolidate insights.
+### For Other Clients
 
----
-
-## What It Does
-
-| Tool | Purpose |
-|------|---------|
-| `store_memory` | Save facts, preferences, procedures, episodes |
-| `search_memory` | Semantic search across all memories |
-| `update_memory` | Modify existing memories |
-| `delete_memory` | Remove outdated memories |
-| `list_memories` | Browse memories by namespace |
-| `get_memory_stats` | View memory statistics |
-| `consolidate_memories` | Find patterns and generate insights |
-| `ingest_text` | Ingest raw text as memory |
-| `ingest_file` | Ingest files (within allowed paths) |
-
-Memories are organized by **namespace** (`global`, `project:myapp`, `user:alice`) and **category** (`fact`, `preference`, `procedure`, `episode`).
-
----
-
-## Installation Options
-
-### Option A: uvx (recommended, zero-install)
-
-```bash
-# Claude Code
-claude mcp add --transport stdio agent-memory -- uvx agent-memory-server
-
-# Or with config file
-claude mcp add --transport stdio agent-memory -- uvx agent-memory-server --config ~/.agent-memory/config.yaml
-```
-
-### Option B: pip install
-
-```bash
-pip install agent-memory-server
-
-# Then add to Claude Code
-claude mcp add --transport stdio agent-memory -- agent-memory-server
-```
-
-### Option C: From source
-
-```bash
-git clone https://github.com/khanglvm/agent-memory.git
-cd agent-memory
-pip install -e ".[dev]"
-
-claude mcp add --transport stdio agent-memory -- python -m agent_memory
-```
-
-### MCP JSON Config (manual)
-
-If you prefer editing config files directly, add to `.mcp.json` (project) or `~/.claude.json` (global):
-
+Configure in your client's MCP settings:
 ```json
 {
   "mcpServers": {
@@ -91,57 +35,56 @@ If you prefer editing config files directly, add to `.mcp.json` (project) or `~/
 }
 ```
 
-With config file and environment variables:
+## Features
 
-```json
-{
-  "mcpServers": {
-    "agent-memory": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": ["agent-memory-server", "--config", "~/.agent-memory/config.yaml"],
-      "env": {
-        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
-      }
-    }
-  }
-}
-```
+**9 Tools** for memory management:
+- `store_memory` — Save facts, preferences, procedures, episodes
+- `search_memory` — Semantic search across memories
+- `update_memory` — Modify existing memories
+- `delete_memory` — Remove outdated memories
+- `list_memories` — Browse memories by namespace
+- `get_memory_stats` — View statistics
+- `consolidate_memories` — Find patterns and insights
+- `ingest_text` — Ingest raw text
+- `ingest_file` — Ingest files (within allowed paths)
 
----
+**4 Resources** for read-only access:
+- `memory://stats` — Global statistics
+- `memory://recent/{namespace}` — Last 10 memories
+- `memory://namespaces` — All namespaces
+- `memory://consolidations/{namespace}` — Recent insights
 
-## Agent Skill
+Organize memories by **namespace** (e.g., `global`, `project:myapp`) and **category** (fact, preference, procedure, episode).
 
-The agent skill teaches your AI agent _when_ to store, _what_ to search, and _how_ to namespace memories effectively.
+## Installation
 
+**Via pip:**
 ```bash
-# Install globally (all projects)
-npx skills add khanglvm/agent-memory -g
-
-# Install for current project only
-npx skills add khanglvm/agent-memory
+pip install agent-memory-server
 ```
 
-Without the skill, Claude Code can still use the MCP tools — but with the skill, it knows best practices like:
-- Search memory before starting tasks
-- Use `project:{name}` namespaces for scoping
-- Consolidate after 5+ new memories
-- Store session summaries as episodes
+**From source:**
+```bash
+git clone https://github.com/khanglvm/agent-memory.git
+cd agent-memory
+pip install -e ".[dev]"
+```
 
----
+**With custom config:**
+```bash
+agent-memory-server --config ~/.agent-memory/config.yaml
+```
 
 ## Configuration
 
-The server works with **zero configuration** — it uses SQLite at `~/.agent-memory/memory.db` with recency-based search (no embeddings needed).
+**Zero-config default:** SQLite at `~/.agent-memory/memory.db` with recency search.
 
-For semantic search and consolidation, create `~/.agent-memory/config.yaml`:
-
+Enable semantic search with embedding provider:
 ```yaml
 embedding:
   provider: openai
   api_key: ${OPENAI_API_KEY}
   model: text-embedding-3-small
-  dimensions: 1536
 
 consolidation:
   provider: openai
@@ -149,151 +92,52 @@ consolidation:
   model: gpt-4o-mini
 ```
 
-### All Config Options
+**Alternatives:** Ollama (local, no API key) or disable embeddings entirely.
 
-```yaml
-storage:
-  db_path: ~/.agent-memory/memory.db     # SQLite database location
-
-embedding:
-  provider: openai       # openai | ollama | none
-  base_url: https://api.openai.com/v1
-  api_key: ${OPENAI_API_KEY}
-  model: text-embedding-3-small
-  dimensions: 1536
-
-consolidation:
-  provider: openai       # openai | ollama | none
-  base_url: https://api.openai.com/v1
-  api_key: ${OPENAI_API_KEY}
-  model: gpt-4o-mini
-  auto_interval_minutes: 0   # 0 = manual only
-  min_memories: 3
-
-server:
-  transport: stdio       # stdio | http
-  http_host: 127.0.0.1
-  http_port: 8888
-  auth_token: ${AGENT_MEMORY_AUTH_TOKEN}   # required for non-localhost HTTP
-
-ingestion:
-  allowed_paths: []      # directories allowed for ingest_file (empty = disabled)
-  max_file_size_mb: 1
-  supported_extensions: [.txt, .md, .json, .csv, .yaml, .yml, .xml, .log]
-
-log_level: INFO
-```
-
-### Environment Variable Overrides
-
-Any config value can be set via env var with `AGENT_MEMORY_` prefix and `__` for nesting:
-
+Environment variables override config with `AGENT_MEMORY_` prefix:
 ```bash
-export AGENT_MEMORY_STORAGE__DB_PATH=/custom/path/memory.db
 export AGENT_MEMORY_EMBEDDING__PROVIDER=ollama
-export AGENT_MEMORY_LOG_LEVEL=DEBUG
+export AGENT_MEMORY_SERVER__TRANSPORT=http
 ```
 
-### Using with Ollama (local, no API key needed)
+## Transport
 
-```yaml
-embedding:
-  provider: ollama
-  base_url: http://localhost:11434
-  model: nomic-embed-text
-  dimensions: 768
+**Default:** stdio (used by MCP clients).
 
-consolidation:
-  provider: ollama
-  base_url: http://localhost:11434
-  model: llama3.2
-```
-
----
-
-## MCP Resources
-
-Read-only data your agent can pull for context:
-
-| URI | Returns |
-|-----|---------|
-| `memory://stats` | Global statistics |
-| `memory://recent/{namespace}` | Last 10 memories |
-| `memory://namespaces` | All namespaces |
-| `memory://consolidations/{namespace}` | Recent insights |
-
----
-
-## HTTP Transport
-
-For remote or cloud agents, run as an HTTP server:
-
+**HTTP mode** for remote agents:
 ```bash
-agent-memory-server --transport http --host 127.0.0.1 --port 8888
+agent-memory-server --transport http --host 0.0.0.0 --port 8888
 ```
 
-Non-localhost binding requires `auth_token`:
-
+Requires bearer token for non-localhost:
 ```bash
-AGENT_MEMORY_AUTH_TOKEN=your-secret agent-memory-server --transport http --host 0.0.0.0
+AGENT_MEMORY_AUTH_TOKEN=secret agent-memory-server --transport http --host 0.0.0.0
 ```
-
----
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────┐
-│                 MCP Memory Server                   │
-│  Transport: stdio | Streamable HTTP                 │
-│                                                     │
-│  ┌─── MCP Tools ───┐  ┌─── MCP Resources ────┐    │
-│  │ store_memory     │  │ memory://stats        │    │
-│  │ search_memory    │  │ memory://recent        │    │
-│  │ update_memory    │  │ memory://namespaces    │    │
-│  │ delete_memory    │  │ memory://consolidations │    │
-│  │ list_memories    │  └────────────────────────┘    │
-│  │ consolidate      │                                │
-│  │ ingest_file/text │                                │
-│  │ get_stats        │                                │
-│  └──────────────────┘                                │
-│                                                     │
-│  ┌─── Processing Layer ───────────────────────┐     │
-│  │ EmbeddingProvider (configurable)           │     │
-│  │   OpenAI / Ollama / custom endpoint        │     │
-│  │                                            │     │
-│  │ ConsolidationEngine (configurable LLM)     │     │
-│  │   OpenAI / Ollama / custom endpoint        │     │
-│  └────────────────────────────────────────────┘     │
-│                                                     │
-│  ┌─── Storage Layer ─────────────────────────┐     │
-│  │ SQLite + sqlite-vec (vector search)       │     │
-│  │ Automatic fallback to recency search      │     │
-│  └────────────────────────────────────────────┘     │
-└─────────────────────────────────────────────────────┘
-```
-
----
+Three layers:
+- **API Layer:** 9 MCP tools + 4 resources via stdio or HTTP
+- **Processing:** Pluggable embedding providers (OpenAI/Ollama/None) and consolidation LLMs
+- **Storage:** SQLite + sqlite-vec for vector search, automatic fallback to recency search
 
 ## Development
 
 ```bash
-git clone https://github.com/khanglvm/agent-memory.git
-cd agent-memory
-python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-
-# Run tests
-pytest tests/ -v
-
-# Lint
-ruff check src/ tests/
-
-# Run server locally
-python -m agent_memory --config config.example.yaml
+pytest tests/ -v          # Run tests
+ruff check src/ tests/    # Lint
+python -m agent_memory    # Run server
 ```
 
----
+## Documentation
+
+- [Project Overview & PDR](./docs/project-overview-pdr.md) — Vision, features, metrics
+- [System Architecture](./docs/system-architecture.md) — Design, data flow, security
+- [Code Standards](./docs/code-standards.md) — Style, patterns, testing
+- [Deployment Guide](./docs/deployment-guide.md) — Installation, config, troubleshooting
+- [Codebase Summary](./docs/codebase-summary.md) — Module reference
+- [Roadmap](./docs/project-roadmap.md) — Status and future direction
 
 ## License
 
