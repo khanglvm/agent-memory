@@ -26,6 +26,8 @@
 #   auth_token: ${AGENT_MEMORY_AUTH_TOKEN}
 #   cors_origins:
 #     - "http://localhost:*"
+#   tls_cert:                      # path to TLS certificate (for Tailscale HTTPS)
+#   tls_key:                       # path to TLS private key
 
 # ingestion:
 #   allowed_paths: []          # empty = ingest_file disabled
@@ -39,5 +41,13 @@
 #     - .yml
 #     - .xml
 #     - .log
+
+# vault:
+#   enabled: false
+#   vault_path: ~/Vault             # Obsidian vault root
+#   sync_folder: memory-vault       # subfolder within vault
+#   watch_local: false              # watch for direct .md edits (Mac Mini only)
+#   write_on_store: true            # auto-write .md when memory stored via MCP
+#   api_port: 8889                  # vault REST API port (separate from MCP)
 
 # log_level: INFO

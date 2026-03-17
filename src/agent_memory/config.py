@@ -62,6 +62,8 @@ class ServerConfig(BaseModel):
     http_port: int = Field(default=8888)
     auth_token: str | None = Field(default=None, description="Bearer token for HTTP")
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:*"])
+    tls_cert: str | None = Field(default=None, description="Path to TLS certificate")
+    tls_key: str | None = Field(default=None, description="Path to TLS private key")
 
 
 class IngestionConfig(BaseModel):
@@ -77,6 +79,27 @@ class IngestionConfig(BaseModel):
     )
 
 
+class VaultConfig(BaseModel):
+    """Obsidian vault sync configuration."""
+
+    enabled: bool = Field(default=False)
+    vault_path: str | None = Field(
+        default=None, description="Obsidian vault path for .md sync"
+    )
+    sync_folder: str = Field(
+        default="memory-vault", description="Subfolder within vault"
+    )
+    watch_local: bool = Field(
+        default=False,
+        description="Watch vault folder for direct edits (Mac Mini only)",
+    )
+    write_on_store: bool = Field(
+        default=True,
+        description="Auto-write .md when memory stored via MCP",
+    )
+    api_port: int = Field(default=8889, description="Vault REST API port")
+
+
 class MemoryConfig(BaseModel):
     """Root configuration model."""
 
@@ -85,6 +108,7 @@ class MemoryConfig(BaseModel):
     consolidation: ConsolidationConfig = Field(default_factory=ConsolidationConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
     ingestion: IngestionConfig = Field(default_factory=IngestionConfig)
+    vault: VaultConfig = Field(default_factory=VaultConfig)
     log_level: str = Field(default="INFO")
 
 

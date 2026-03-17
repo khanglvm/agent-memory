@@ -124,6 +124,63 @@ async def run(argv: list[str] | None = None) -> None:
             config.consolidation.auto_interval_minutes,
         )
 
+    # Start vault API on separate port if enabled
+    vault_server = None
+    if config.vault.enabled:
+        from agent_memory.vault.routes import create_vault_app
+
+        vault_app = create_vault_app(storage, embedding_provider, config)
+
+        import uvicorn
+
+        ssl_kwargs = {}
+        if config.server.tls_cert and config.server.tls_key:
+            ssl_kwargs["ssl_certfile"] = config.server.tls_cert
+            ssl_kwargs["ssl_keyfile"] = config.server.tls_key
+
+        vault_config = uvicorn.Config(
+            vault_app,
+            host=config.server.http_host,
+            port=config.vault.api_port,
+            log_level=config.log_level.lower(),
+            **ssl_kwargs,
+        )
+        vault_server = uvicorn.Server(vault_config)
+        asyncio.create_task(vault_server.serve())
+        logger.info(
+            "Vault API started on %s:%d",
+            config.server.http_host,
+            config.vault.api_port,
+        )
+
+        # Start file watcher if enabled
+        if config.vault.watch_local and config.vault.vault_path:
+            from pathlib import Path
+
+            from agent_memory.vault.serializer import markdown_to_memory
+            from agent_memory.vault.watcher import watch_vault
+
+            watch_dir = (
+                Path(config.vault.vault_path).expanduser() / config.vault.sync_folder
+            )
+
+            async def _on_vault_change(change_type: str, path: Path) -> None:
+                if change_type == "deleted":
+                    return
+                try:
+                    text = path.read_text(encoding="utf-8")
+                    memory = markdown_to_memory(text)
+                    emb = None
+                    if embedding_provider.dimensions > 0:
+                        emb = await embedding_provider.embed(memory.content)
+                    await storage.store(memory, embedding=emb)
+                    logger.info("Synced vault file: %s", path.name)
+                except Exception:
+                    logger.exception("Failed to sync vault file: %s", path)
+
+            asyncio.create_task(watch_vault(str(watch_dir), _on_vault_change))
+            logger.info("Vault file watcher started: %s", watch_dir)
+
     logger.info(
         "Starting agent-memory server (transport=%s)", config.server.transport
     )
@@ -131,12 +188,26 @@ async def run(argv: list[str] | None = None) -> None:
     try:
         if config.server.transport == "stdio":
             await mcp_server.run_stdio_async()
-        else:
-            await mcp_server.run_sse_async(
+        elif config.server.tls_cert and config.server.tls_key:
+            # TLS mode: run MCP SSE via manual uvicorn with SSL
+            import uvicorn
+
+            starlette_app = mcp_server.sse_app()
+            mcp_uvicorn_config = uvicorn.Config(
+                starlette_app,
                 host=config.server.http_host,
                 port=config.server.http_port,
+                log_level=config.log_level.lower(),
+                ssl_certfile=config.server.tls_cert,
+                ssl_keyfile=config.server.tls_key,
             )
+            mcp_uv_server = uvicorn.Server(mcp_uvicorn_config)
+            await mcp_uv_server.serve()
+        else:
+            await mcp_server.run_sse_async()
     finally:
+        if vault_server:
+            vault_server.should_exit = True
         await storage.close()
 
 

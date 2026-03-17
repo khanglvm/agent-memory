@@ -37,6 +37,8 @@ def create_mcp_server(
             "Memory system for AI agents. Store facts, search knowledge, "
             "track insights across sessions. Use namespaces to organize memories."
         ),
+        host=config.server.http_host,
+        port=config.server.http_port,
     )
 
     # ------------------------------------------------------------------

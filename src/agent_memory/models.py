@@ -29,6 +29,7 @@ class Memory(BaseModel):
     importance: float = Field(default=0.5, ge=0.0, le=1.0)
     connections: list[str] = Field(default_factory=list)
     consolidated: bool = Field(default=False)
+    source: str = Field(default="mcp", description="Origin: mcp | obsidian | mobile")
     created_at: str = Field(default_factory=_utc_now)
     updated_at: str = Field(default_factory=_utc_now)
 

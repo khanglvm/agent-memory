@@ -40,6 +40,7 @@ def _row_to_memory(row: aiosqlite.Row) -> Memory:
         importance=row["importance"],
         connections=json.loads(row["connections"] or "[]"),
         consolidated=bool(row["consolidated"]),
+        source=row["source"] if "source" in row.keys() else "mcp",
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
@@ -96,6 +97,7 @@ class SQLiteStorage:
                 self._vec_enabled = False
 
         await self._create_schema()
+        await self._migrate_add_source_column()
         await self._validate_embedding_dim()
 
     async def close(self) -> None:
@@ -129,11 +131,13 @@ class SQLiteStorage:
                 importance REAL DEFAULT 0.5,
                 connections TEXT DEFAULT '[]',
                 consolidated INTEGER DEFAULT 0,
+                source TEXT DEFAULT 'mcp',
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_memories_namespace ON memories(namespace);
             CREATE INDEX IF NOT EXISTS idx_memories_consolidated ON memories(consolidated);
+            CREATE INDEX IF NOT EXISTS idx_memories_updated_at ON memories(updated_at);
 
             CREATE TABLE IF NOT EXISTS consolidations (
                 id TEXT PRIMARY KEY,
@@ -201,6 +205,35 @@ class SQLiteStorage:
             (key, value),
         )
 
+    async def _migrate_add_source_column(self) -> None:
+        """Add source column to memories table if missing (migration)."""
+        assert self._db is not None
+        async with self._db.execute("PRAGMA table_info(memories)") as cursor:
+            columns = {row["name"] for row in await cursor.fetchall()}
+        if "source" not in columns:
+            await self._db.execute(
+                "ALTER TABLE memories ADD COLUMN source TEXT DEFAULT 'mcp'"
+            )
+
+    # ------------------------------------------------------------------
+    # Change tracking
+    # ------------------------------------------------------------------
+
+    async def get_changes_since(
+        self, since: str, namespace: str | None = None
+    ) -> list[Memory]:
+        """Return memories with updated_at > since."""
+        assert self._db is not None
+        query = "SELECT * FROM memories WHERE updated_at > ?"
+        params: list[Any] = [since]
+        if namespace:
+            query += " AND namespace = ?"
+            params.append(namespace)
+        query += " ORDER BY updated_at ASC"
+        async with self._db.execute(query, params) as cursor:
+            rows = await cursor.fetchall()
+        return [_row_to_memory(r) for r in rows]
+
     # ------------------------------------------------------------------
     # Namespace helpers
     # ------------------------------------------------------------------
@@ -228,8 +261,9 @@ class SQLiteStorage:
                 """
                 INSERT OR REPLACE INTO memories
                     (id, namespace, content, summary, entities, topics, category,
-                     importance, connections, consolidated, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     importance, connections, consolidated, source,
+                     created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     memory.id,
@@ -242,6 +276,7 @@ class SQLiteStorage:
                     memory.importance,
                     json.dumps(memory.connections),
                     int(memory.consolidated),
+                    memory.source,
                     memory.created_at,
                     memory.updated_at,
                 ),
@@ -271,7 +306,7 @@ class SQLiteStorage:
 
     _ALLOWED_UPDATE_FIELDS = frozenset({
         "content", "summary", "entities", "topics", "category",
-        "importance", "connections", "consolidated", "updated_at",
+        "importance", "connections", "consolidated", "source", "updated_at",
     })
 
     async def update(self, memory_id: str, **fields: Any) -> Memory:

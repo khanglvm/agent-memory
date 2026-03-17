@@ -25,9 +25,15 @@ src/agent_memory/
 │   ├── engine.py            # Main orchestration
 │   ├── llm.py               # LLM provider wrapper
 │   └── prompts.py           # Prompt templates
-└── ingestion/
+├── ingestion/
+│   ├── __init__.py
+│   └── processor.py         # File/text ingestion
+└── vault/
     ├── __init__.py
-    └── processor.py         # File/text ingestion
+    ├── serializer.py        # Memory <-> Markdown conversion
+    ├── writer.py            # Write .md to Obsidian vault
+    ├── watcher.py           # Watch vault folder for changes
+    └── routes.py            # REST API (Starlette, port 8889)
 ```
 
 **Directory Structure:**

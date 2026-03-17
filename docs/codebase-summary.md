@@ -166,6 +166,43 @@ Python version: 3.11+
   - Graceful fallback if LLM unavailable
 - **Key Security:** Symlink resolution prevents directory traversal
 
+## Vault Module: `vault/`
+
+### Serializer: `vault/serializer.py` (~60 lines)
+- **Purpose:** Bidirectional Memory <-> Markdown conversion
+- **Key Functions:**
+  - `memory_to_markdown()` — Render Memory as .md with YAML frontmatter
+  - `markdown_to_memory()` — Parse .md with YAML frontmatter into Memory
+- **Key Feature:** YAML frontmatter stores metadata (id, namespace, category, importance, source, etc.)
+
+### Writer: `vault/writer.py` (~80 lines)
+- **Purpose:** Write .md files to Obsidian vault
+- **Key Class:** `VaultWriter`
+  - `write_memory()` — Write single memory as .md file
+  - `update_memory()` — Update existing .md file
+  - `delete_memory()` — Remove .md file
+  - `_ensure_folder()` — Create vault subfolder if needed
+- **Key Feature:** Organizes memories by namespace in vault subfolders
+
+### Watcher: `vault/watcher.py` (~100 lines)
+- **Purpose:** Watch vault folder for external changes
+- **Key Class:** `VaultWatcher`
+  - `start()` — Begin monitoring vault folder (async background task)
+  - `stop()` — Stop watching
+  - Detects adds/updates/deletes in vault .md files
+  - Sends changes to memory sync endpoint
+- **Key Feature:** Bidirectional sync between Obsidian and agent-memory
+
+### Routes: `vault/routes.py` (~250 lines)
+- **Purpose:** Standalone Starlette REST API on port 8889
+- **Key Endpoints:**
+  - `POST /push` — Receive memories from Obsidian plugin, sync to storage
+  - `GET /changes` — Poll for memory changes to push back to Obsidian
+  - `DELETE /memory/{id}` — Remove memory
+  - `POST /batch-push` — Bulk import memories
+  - `GET /health` — Health check
+- **Key Feature:** Bearer token auth middleware (skips /health); HMAC validation for security
+
 ## Cross-Module Dependencies
 
 ```
@@ -192,6 +229,21 @@ consolidation/engine.py
 ingestion/processor.py
   └─> consolidation/llm.py (optional enrichment)
   └─> storage/sqlite.py (check for duplicates)
+
+vault/serializer.py
+  └─> models.py (Memory)
+
+vault/writer.py
+  └─> vault/serializer.py (memory_to_markdown)
+
+vault/watcher.py
+  └─> models.py (Memory)
+  └─> http_client.py (send changes to API)
+
+vault/routes.py
+  └─> models.py (Memory, Consolidation)
+  └─> storage/sqlite.py (store, retrieve memories)
+  └─> vault/serializer.py (markdown_to_memory, memory_to_markdown)
 
 storage/sqlite.py
   └─> models.py (Memory, Consolidation, Namespace)
@@ -233,13 +285,17 @@ SQLite transactions ensure consolidated memories are stored atomically; per-name
 |--------|-------|---------|
 | storage/sqlite.py | 637 | Storage backend |
 | server.py | 378 | MCP server |
+| vault/routes.py | 250+ | Vault REST API |
 | consolidation/engine.py | 208 | Consolidation orchestration |
 | ingestion/processor.py | 189 | File/text ingestion |
+| vault/watcher.py | 100+ | Vault folder watcher |
 | consolidation/llm.py | 81 | LLM provider wrapper |
 | embedding/providers.py | 111 | Embedding providers |
+| vault/writer.py | 80+ | Vault file writer |
 | config.py | 154 | Configuration |
 | __main__.py | 148 | CLI entry point |
 | consolidation/prompts.py | 61 | Prompt templates |
+| vault/serializer.py | 60+ | Markdown serialization |
 | models.py | 59 | Pydantic schemas |
 | http_client.py | 70 | Async HTTP client |
 | embedding/base.py | 27 | Abstract base |

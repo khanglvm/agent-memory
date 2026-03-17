@@ -30,6 +30,7 @@ Enable AI agents to maintain persistent, searchable knowledge across sessions wi
 - **MCP Protocol** — 9 tools + 4 resources via stdio or HTTP
 - **Configurable Providers** — Pluggable embeddings and LLMs
 - **Zero-Config Default** — Works immediately with SQLite + recency search
+- **Obsidian Vault Sync** — Bidirectional memory ↔ Markdown sync (Phase 1, REST API on port 8889)
 
 ### Non-Functional
 - **Security** — Bearer token auth, prompt injection defense (XML/CDATA wrapping), symlink resolution
@@ -157,7 +158,7 @@ Enable AI agents to maintain persistent, searchable knowledge across sessions wi
 ## Out of Scope (Post-MVP)
 
 - **Multimodal Ingestion** — Image/audio processing
-- **File Watching** — Auto-ingest changes to monitored directories
+- **File Watching** (general) — Auto-ingest changes to monitored directories (vault watcher available for Obsidian)
 - **Web Dashboard** — UI for memory exploration (CLI/API sufficient)
 - **PostgreSQL Adapter** — SQLite default; other DBs as community contributions
 - **Dual Transport** — Run stdio and HTTP simultaneously
@@ -190,6 +191,14 @@ Enable AI agents to maintain persistent, searchable knowledge across sessions wi
 - 109 tests passing
 - 0 high-severity security issues
 - Comprehensive documentation
+
+### Phase 1 Complete (2026-03-17) ✓
+- Obsidian vault sync (bidirectional .md ↔ Memory)
+- Vault REST API (port 8889, bearer token auth)
+- Memory source tracking (mcp | obsidian | mobile)
+- Cycle prevention (skip write if source=obsidian)
+- VaultConfig added to configuration system
+- Vault module: serializer, writer, watcher, routes
 
 ### Phase 2 (Post-MVP)
 - PostgreSQL adapter

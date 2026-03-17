@@ -450,13 +450,87 @@ await db.execute(
 - Circuit breaker prevents rapid retries
 - Fallback to recency search if embedding fails
 
+## Vault Integration (Phase 1)
+
+### Overview
+The vault subsystem enables bidirectional sync between agent-memory and Obsidian vaults. Memories can be stored as Markdown files with YAML frontmatter, watched for changes, and synced back to the MCP server.
+
+### Components
+
+**Serializer** (`vault/serializer.py`)
+- Converts Memory objects to/from Markdown with YAML frontmatter
+- Frontmatter contains id, namespace, category, importance, source, consolidated flag, timestamps
+- Preserves all metadata during round-trip
+
+**Writer** (`vault/writer.py`)
+- Writes Memory objects as .md files to Obsidian vault
+- Organizes by namespace in configurable subfolder (default: `memory-vault/`)
+- Atomic writes with folder creation
+
+**Watcher** (`vault/watcher.py`)
+- Async background task monitoring vault subfolder
+- Detects file additions, updates, deletions
+- Sends changes to Vault REST API via polling endpoint
+- Debounces rapid changes
+
+**Routes** (`vault/routes.py`)
+- Standalone Starlette ASGI app on port 8889
+- Endpoints: `/push`, `/changes`, `/batch-push`, `/delete/{id}`, `/health`
+- Bearer token auth with HMAC comparison (timing-safe)
+- Handles Obsidian plugin ↔ agent-memory sync
+
+### Configuration
+
+**VaultConfig** (new in config.py)
+```python
+vault:
+  enabled: bool              # Enable/disable vault sync
+  vault_path: str | None     # Path to Obsidian vault root
+  sync_folder: str           # Subfolder within vault (default: memory-vault)
+  watch_local: bool          # Watch for external changes (async background task)
+  write_on_store: bool       # Auto-write .md when memory stored via MCP
+  api_port: int              # Vault API port (default: 8889)
+```
+
+**Memory** model now includes:
+- `source: str` — Origin marker (mcp | obsidian | mobile); used to prevent cycles
+
+### Data Flow
+
+```
+Obsidian Plugin
+    │
+    ├─ Writes .md to vault/sync_folder
+    │
+    ├─ [Watcher] detects changes
+    │   └─ Sends via HTTP POST /push
+    │
+    └─ Vault Routes (/push, /changes)
+        │
+        ├─ /push: Deserialize .md → Memory → store_memory()
+        │          Update Memory.source = "obsidian"
+        │
+        ├─ /changes: Poll recent changes since last sync
+        │            Return Memory objects to push back
+        │
+        └─ [Writer] on store_memory (if write_on_store=true)
+            └─ Serialize Memory → .md → write to vault
+               Skip if Memory.source = "obsidian" (avoid cycles)
+```
+
+### Security
+
+- Bearer token auth required for all vault API routes (skips /health)
+- HMAC-secure token comparison (prevents timing attacks)
+- Serialization preserves namespace isolation (read/write filtered by namespace)
+
 ## Future Evolution
 
 ### Planned (Post-MVP)
 - PostgreSQL adapter (drop-in replacement for SQLite)
-- File watcher for continuous ingestion
 - Web dashboard for memory exploration
 - Dual transport (stdio + HTTP simultaneously)
+- Auto-consolidation scheduling UI
 
 ### Deferred
 - Multimodal ingestion (images, audio)
