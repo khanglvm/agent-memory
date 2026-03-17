@@ -34,3 +34,8 @@ Thumbs.db
 .env
 *.env.*
 !config.example.yaml
+
+# Internal dev files
+.claude/
+plans/
+docs/journals/
