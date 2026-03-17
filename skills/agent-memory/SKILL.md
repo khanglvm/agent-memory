@@ -2,7 +2,7 @@
 name: agent-memory
 description: Persistent memory for AI agents via MCP. Use when you need to remember facts, preferences, procedures, or decisions across sessions. Activate before starting tasks to search past knowledge, and after learning something new to store it.
 metadata:
-  author: khang
+  author: khanglvm
   version: "0.1.0"
   tags: ["memory", "mcp", "persistence", "knowledge"]
 ---

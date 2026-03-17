@@ -19,7 +19,7 @@ claude mcp add --transport stdio agent-memory -- uvx agent-memory-server
 **2. Install the agent skill** (teaches Claude _when_ and _how_ to use memory):
 
 ```bash
-npx skills add khang/agent-memory -g
+npx skills add khanglvm/agent-memory -g
 ```
 
 Done. Claude Code now has persistent memory. It will automatically store facts, search past knowledge, and consolidate insights.
@@ -68,7 +68,7 @@ claude mcp add --transport stdio agent-memory -- agent-memory-server
 ### Option C: From source
 
 ```bash
-git clone https://github.com/khang/agent-memory.git
+git clone https://github.com/khanglvm/agent-memory.git
 cd agent-memory
 pip install -e ".[dev]"
 
@@ -116,10 +116,10 @@ The agent skill teaches your AI agent _when_ to store, _what_ to search, and _ho
 
 ```bash
 # Install globally (all projects)
-npx skills add khang/agent-memory -g
+npx skills add khanglvm/agent-memory -g
 
 # Install for current project only
-npx skills add khang/agent-memory
+npx skills add khanglvm/agent-memory
 ```
 
 Without the skill, Claude Code can still use the MCP tools — but with the skill, it knows best practices like:
@@ -278,7 +278,7 @@ AGENT_MEMORY_AUTH_TOKEN=your-secret agent-memory-server --transport http --host 
 ## Development
 
 ```bash
-git clone https://github.com/khang/agent-memory.git
+git clone https://github.com/khanglvm/agent-memory.git
 cd agent-memory
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
