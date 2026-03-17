@@ -8,6 +8,7 @@ Status, current focus, and future direction for agent-memory.
 **Release Date:** March 16, 2026
 **Development Time:** ~38 hours
 **Test Coverage:** 109 tests passing, 95%+ coverage
+**Obsidian Integration:** Complete (March 17, 2026)
 
 ### What's Complete
 
@@ -21,15 +22,21 @@ Status, current focus, and future direction for agent-memory.
 - **Security** (prompt injection defense, path validation, SQL prevention)
 - **Testing** (100+ tests, async fixtures, HTTP mocking)
 - **Documentation** (README, deployment guide, code standards)
+- **Vault REST API** (Markdown serialization, bidirectional sync on port 8889)
+- **TLS/HTTPS** (Tailscale certificate support for secure multi-device access)
+- **Obsidian Plugin** (TypeScript plugin with event-driven push, polling pull)
+- **Rate Limiting & Token Rotation** (Vault API protection, auth hardening)
+- **Audit Logging** (Complete vault API access tracking)
 
 ### Known Limitations
 
-- **Single-Host Only** — No distributed memory across agents
+- **Single-Host Only** — No distributed memory across agents (Tailscale hub-spoke topology works for personal use)
 - **SQLite Backend Only** — PostgreSQL deferred
 - **Manual Consolidation** — Auto-scheduling implemented but not exposed in UI
 - **File Ingestion Limited** — Single-file only, no directory watching
 - **No Dashboard** — CLI/API sufficient for MVP
 - **Vector Dimensions Fixed** — Cannot migrate between embedding models easily
+- **Obsidian Plugin Scope** — iPhone is push-only (read-only view of memories optional)
 
 ## Phase 1: Stabilization & Early Adoption (April-May 2026)
 

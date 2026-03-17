@@ -160,6 +160,14 @@ class SQLiteStorage:
                 hash TEXT NOT NULL,
                 processed_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS tombstones (
+                id TEXT PRIMARY KEY,
+                namespace TEXT NOT NULL DEFAULT 'default',
+                deleted_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_tombstones_deleted_at
+                ON tombstones(deleted_at);
         """)
 
         if self._vec_enabled:
@@ -353,6 +361,8 @@ class SQLiteStorage:
 
     async def delete(self, memory_id: str) -> bool:
         assert self._db is not None
+        # Fetch namespace before deleting (for tombstone)
+        existing = await self.get(memory_id)
         cursor = await self._db.execute(
             "DELETE FROM memories WHERE id = ?", (memory_id,)
         )
@@ -360,7 +370,33 @@ class SQLiteStorage:
             await self._db.execute(
                 "DELETE FROM memory_vectors WHERE id = ?", (memory_id,)
             )
-        return cursor.rowcount > 0
+        if cursor.rowcount > 0:
+            namespace = existing.namespace if existing else "default"
+            await self._db.execute(
+                "INSERT OR REPLACE INTO tombstones (id, namespace, deleted_at)"
+                " VALUES (?, ?, ?)",
+                (memory_id, namespace, _utc_now()),
+            )
+            return True
+        return False
+
+    async def get_tombstones_since(
+        self, since: str, namespace: str | None = None
+    ) -> list[dict]:
+        """Return tombstones (deleted memory IDs) since timestamp."""
+        assert self._db is not None
+        query = "SELECT id, namespace, deleted_at FROM tombstones WHERE deleted_at > ?"
+        params: list[Any] = [since]
+        if namespace:
+            query += " AND namespace = ?"
+            params.append(namespace)
+        query += " ORDER BY deleted_at ASC"
+        async with self._db.execute(query, params) as cursor:
+            rows = await cursor.fetchall()
+        return [
+            {"id": r["id"], "namespace": r["namespace"], "deleted_at": r["deleted_at"]}
+            for r in rows
+        ]
 
     async def list(
         self,

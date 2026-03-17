@@ -61,6 +61,9 @@ class ServerConfig(BaseModel):
     http_host: str = Field(default="127.0.0.1")
     http_port: int = Field(default=8888)
     auth_token: str | None = Field(default=None, description="Bearer token for HTTP")
+    auth_token_previous: str | None = Field(
+        default=None, description="Previous auth token accepted during rotation"
+    )
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:*"])
     tls_cert: str | None = Field(default=None, description="Path to TLS certificate")
     tls_key: str | None = Field(default=None, description="Path to TLS private key")
@@ -98,6 +101,11 @@ class VaultConfig(BaseModel):
         description="Auto-write .md when memory stored via MCP",
     )
     api_port: int = Field(default=8889, description="Vault REST API port")
+    rate_limit_max: int = Field(default=100, description="Max requests per window")
+    rate_limit_window_sec: int = Field(default=60, description="Rate limit window in seconds")
+    max_content_length: int = Field(
+        default=10240, description="Max content length per memory (bytes)"
+    )
 
 
 class MemoryConfig(BaseModel):

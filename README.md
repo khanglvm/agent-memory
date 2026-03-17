@@ -114,6 +114,65 @@ Requires bearer token for non-localhost:
 AGENT_MEMORY_AUTH_TOKEN=secret agent-memory-server --transport http --host 0.0.0.0
 ```
 
+## Multi-Device Setup (Hub-Spoke via Tailscale)
+
+For multi-device setups where a central Mac Mini serves as the memory hub:
+
+**On the hub (Mac Mini):**
+```bash
+# Start with HTTP transport, vault sync, and auth
+AGENT_MEMORY_AUTH_TOKEN=your-secret agent-memory-server \
+  --transport http --host 0.0.0.0 --port 8888
+```
+
+Configure `config.yaml`:
+```yaml
+server:
+  transport: http
+  http_host: 0.0.0.0
+  http_port: 8888
+  auth_token: ${AGENT_MEMORY_AUTH_TOKEN}
+  tls_cert: /path/to/cert.pem    # Optional: Tailscale HTTPS
+  tls_key: /path/to/key.pem
+
+vault:
+  enabled: true
+  vault_path: ~/Vault
+  sync_folder: memory-vault
+  write_on_store: true
+  api_port: 8889
+```
+
+**On dev Macs (spokes):**
+```bash
+# Quick setup via script
+./scripts/setup-client.sh https://macmini.tail:8888
+
+# Or manually add to Claude Code MCP config:
+# ~/.claude/settings.json or .mcp.json
+```
+
+```json
+{
+  "mcpServers": {
+    "agent-memory": {
+      "type": "http",
+      "url": "https://macmini.tail:8888/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AGENT_MEMORY_AUTH_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+**Requirements:**
+- [Tailscale](https://tailscale.com) installed on all devices (free personal plan)
+- Same tailnet for hub and spokes
+- `AGENT_MEMORY_AUTH_TOKEN` env var set on all devices
+
+See [Obsidian Agent Memory Plugin](https://github.com/khanglvm/obsidian-agent-memory) for Obsidian vault sync.
+
 ## Architecture
 
 Three layers:

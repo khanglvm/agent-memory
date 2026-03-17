@@ -201,7 +201,14 @@ Python version: 3.11+
   - `DELETE /memory/{id}` — Remove memory
   - `POST /batch-push` — Bulk import memories
   - `GET /health` — Health check
-- **Key Feature:** Bearer token auth middleware (skips /health); HMAC validation for security
+- **Key Features:**
+  - Bearer token auth middleware (skips /health); HMAC validation for security
+  - Rate limiting: 100 requests/min per client (prevents abuse)
+  - Auth token rotation: support for previous token during transition
+  - Request validation: UUID format, content length limits, YAML frontmatter validation
+  - Path traversal prevention: sync folder isolation
+  - Audit logging: all requests logged with client IP, method, path, status
+  - Tombstone support: deleted memories marked for sync coordination
 
 ## Cross-Module Dependencies
 

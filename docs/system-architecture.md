@@ -523,6 +523,12 @@ Obsidian Plugin
 - Bearer token auth required for all vault API routes (skips /health)
 - HMAC-secure token comparison (prevents timing attacks)
 - Serialization preserves namespace isolation (read/write filtered by namespace)
+- Rate limiting: 100 requests per minute per client (prevents abuse)
+- Auth token rotation: support for previous token during transition period
+- Request validation: UUID format, content length limits, YAML frontmatter validation
+- Path traversal prevention: sync folder isolation enforced
+- Audit logging: all vault API access logged with client IP, method, path, status code
+- Tombstone support: deleted memories marked but retained for sync coordination
 
 ## Future Evolution
 

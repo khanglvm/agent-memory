@@ -317,6 +317,120 @@ consolidation:
 - Consolidation skipped
 - Memories accumulate indefinitely
 
+## Multi-Device Setup (Obsidian Hub-Spoke via Tailscale)
+
+### Overview
+
+Transform agent-memory into a centralized multi-device memory hub using Tailscale mesh networking:
+- **Mac Mini** runs agent-memory as single source of truth
+- **Dev Macs** connect via Tailscale and use agent-memory via HTTP MCP transport
+- **iPhone** runs Obsidian with agent-memory plugin for push-only input
+
+### Architecture
+
+```
+                    Mac Mini (Hub)
+                 [agent-memory on :8888 & :8889]
+                          │
+          Tailscale mesh (100.x.x.x)
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+    MacBook Pro      MacBook Air        iPhone
+   Claude Code       Claude Code      Obsidian
+   Obsidian+Plugin   Obsidian+Plugin   +Plugin
+```
+
+### Prerequisites
+
+1. **Tailscale Installation**
+   - Install on Mac Mini: `brew install tailscale`
+   - Install on dev Macs: `brew install tailscale`
+   - Install on iPhone: App Store (Obsidian or Tailscale app)
+
+2. **MagicDNS Setup**
+   - Enable in Tailscale admin: https://login.tailscale.com
+   - Auto-generates stable hostnames: `macmini.tail.net`, etc.
+
+### Configuration Steps
+
+**On Mac Mini (Hub):**
+1. Start agent-memory with HTTP transport on all IPs
+2. Generate TLS cert via Tailscale's certificate authority
+3. Start vault API on port 8889 with HTTPS
+
+```bash
+# Start with HTTP transport
+AGENT_MEMORY_SERVER__TRANSPORT=http \
+AGENT_MEMORY_SERVER__HTTP_HOST=0.0.0.0 \
+AGENT_MEMORY_SERVER__HTTP_PORT=8888 \
+agent-memory-server
+
+# Vault API auto-starts on 8889 (if vault.enabled=true in config)
+```
+
+**On Dev Macs:**
+1. Connect to Tailscale: `tailscale up`
+2. Configure Claude Code to use centralized agent-memory
+3. Set auth token via environment variable
+
+```bash
+# In ~/.zshrc or equivalent
+export AGENT_MEMORY_AUTH_TOKEN="your-secure-token"
+```
+
+3. Update Claude Code MCP config (`~/.claude/settings.json`):
+```json
+{
+  "mcpServers": {
+    "agent-memory": {
+      "type": "http",
+      "url": "https://macmini.tail:8888/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AGENT_MEMORY_AUTH_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+**On iPhone:**
+1. Install Tailscale from App Store
+2. Connect to same tailnet as Mac Mini
+3. Enable Tailscale VPN in Settings
+4. Install Obsidian from App Store
+5. Install agent-memory-sync plugin
+6. Configure: `https://macmini.tail:8889`, auth token
+
+### Security Considerations
+
+**Tailscale ACLs:**
+```json
+{
+  "acls": [
+    {
+      "action": "accept",
+      "src": ["tag:dev-machines"],
+      "dst": ["tag:memory-server:8888", "tag:memory-server:8889"]
+    }
+  ],
+  "tagOwners": {
+    "tag:memory-server": ["autogroup:admin"],
+    "tag:dev-machines": ["autogroup:admin"]
+  }
+}
+```
+
+**Rate Limiting:**
+- Vault API limited to 100 requests/min per client
+- Prevents brute force or accidental DoS
+
+**Auth Token Rotation:**
+- Support for previous token during transition
+- Update all clients before removing old token
+
+---
+
 ## Security Hardening
 
 ### 1. Bearer Token (HTTP Only)
