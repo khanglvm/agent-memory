@@ -1,0 +1,6 @@
+{
+  "name": "agent-memory",
+  "description": "Persistent memory for AI agents via MCP",
+  "skill_file": "skills/agent-memory/SKILL.md",
+  "references": ["skills/agent-memory/references/memory-patterns.md"]
+}
