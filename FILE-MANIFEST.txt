@@ -1,0 +1,104 @@
+OBSIDIAN PLUGIN DEVELOPMENT RESEARCH - FILE MANIFEST
+=====================================================
+
+Generated: 2026-03-17
+Total Research Files: 4
+
+FILE PATHS (Use these for reference)
+====================================
+
+1. RESEARCH SUMMARY (Start here)
+   Path: /Users/khang/Documents/repo/agent-memory/RESEARCH-SUMMARY.md
+   Size: ~5 KB
+   Purpose: Executive summary, quick answers, recommended architecture
+   Read time: 10 minutes
+   Contains: Answers to all 7 research questions, code example, phases
+
+2. COMPREHENSIVE RESEARCH (Deep dive)
+   Path: /Users/khang/Documents/repo/agent-memory/obsidian-plugin-development-comprehensive-research.md
+   Size: ~45 KB
+   Purpose: Complete technical reference
+   Read time: 45-60 minutes
+   Contains: 11 sections covering API, iOS, stack, patterns, examples, gotchas
+
+3. IMPLEMENTATION CHECKLIST (Practical guide)
+   Path: /Users/khang/Documents/repo/agent-memory/obsidian-plugin-implementation-checklist.md
+   Size: ~8 KB
+   Purpose: Quick reference during development
+   Read time: 15 minutes
+   Contains: API patterns, iOS checks, sync template, testing checklist, debugging
+
+4. MEMORY INDEX (Persistent reference)
+   Path: /Users/khang/.claude/agent-memory/researcher/MEMORY.md
+   Size: ~1 KB
+   Purpose: Memory system index (loaded in future conversations)
+   Contains: Links to all memory files
+
+MEMORY FILES (Persistent, loaded in future conversations)
+==========================================================
+
+1. obsidian-plugin-development-research.md
+   Path: /Users/khang/.claude/agent-memory/researcher/obsidian-plugin-development-research.md
+   Purpose: Structured plugin API reference for future research
+   Includes: All verified APIs, iOS constraints, sync patterns, code references
+
+2. obsidian-alternatives-deep-research-2026.md (Pre-existing)
+   Path: /Users/khang/.claude/agent-memory/researcher/obsidian-alternatives-deep-research-2026.md
+   Purpose: Comparison of Obsidian alternatives (Joplin, Memos, etc.)
+
+3. obsidian-ecosystem-research.md (Pre-existing)
+   Path: /Users/khang/.claude/agent-memory/researcher/obsidian-ecosystem-research.md
+   Purpose: Obsidian vault structure, sync options, CLI, REST API
+
+RESEARCH METHODOLOGY
+====================
+
+- 7 parallel web searches covering all research areas
+- 4 fetches from official docs + GitHub repos
+- 4 follow-up searches for specific patterns
+- Cross-referenced multiple sources (official docs, forum discussions, working code)
+- Verified through Remotely Save + LiveSync source code examples
+
+SOURCES USED (Summary)
+======================
+
+Official:
+  - docs.obsidian.md/Plugins/Vault
+  - docs.obsidian.md/Plugins/Events
+  - help.obsidian.md/community-plugins
+
+Reference Implementations:
+  - github.com/obsidianmd/obsidian-sample-plugin
+  - github.com/remotely-save/remotely-save
+  - github.com/vrtmrz/obsidian-livesync
+
+Community:
+  - forum.obsidian.md (plugin development section)
+  - GitHub issues in reference repos
+
+NEXT STEPS FOR IMPLEMENTATION
+=============================
+
+1. Read RESEARCH-SUMMARY.md (10 min)
+2. Review "Recommended Architecture" section
+3. Clone obsidian-sample-plugin from GitHub
+4. Use obsidian-plugin-implementation-checklist.md during coding
+5. Reference obsidian-plugin-development-comprehensive-research.md for details
+
+KEY FINDINGS SUMMARY
+====================
+
+✅ Plugin API is production-ready for external server sync
+✅ iOS community plugins fully supported (with HTTPS-only constraint)
+✅ Two proven patterns: Remotely Save (push) + LiveSync (CouchDB)
+✅ Custom REST server viable using event-driven + polling pattern
+✅ Tailscale iOS integration works via HTTPS to Tailscale IPs
+✅ Development stack: TypeScript + esbuild, fast iteration
+
+⚠️ Critical: Debounce vault.on('modify') events (5-10 sec)
+⚠️ Critical: Use requestUrl() not fetch() (CORS)
+⚠️ Critical: HTTPS only on iOS (App Store policy)
+⚠️ Watch for: Memory leaks (use registerEvent()), requestSave debounce conflicts
+
+Unresolved: iOS background execution, plugin size limits, iOS event batching
+
